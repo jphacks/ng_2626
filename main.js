@@ -11,6 +11,9 @@ const motionReadout = document.getElementById("motionReadout");
 // const startButton = document.getElementById("startButton");
 const clearButton = document.getElementById("clearButton");
 const correctButton = document.getElementById("correctButton");
+const pauseButton = document.getElementById("pauseButton");
+const promptButton = document.getElementById("promptButton");
+const wordDisplay = document.getElementById("Word");
 
 
 const ctx = canvas?.getContext("2d");
@@ -76,6 +79,9 @@ if (!motionReadout) missingElements.push("#motionReadout");
 // if (!startButton) missingElements.push("#startButton");
 if (!clearButton) missingElements.push("#clearButton");
 if (!ctx) missingElements.push("Canvas 2D context");
+if (!pauseButton) missingElements.push("#pauseButton");
+if (!promptButton) missingElements.push("#promptButton");
+if (!wordDisplay) missingElements.push("#Word");
 
 if (missingElements.length > 0) {
     console.error(
@@ -99,25 +105,23 @@ let previousMotion = null;
 let motionTrail = [];
 const maxMotionTrailPoints = 500;
 
+// 一時停止と交代の状態
+let isPaused = false;
+let currentPlayer = 0;      // 何人目か（0始まり）
+let motionGranted = false;  // センサーの許可が取れたか
 // お題の表示設定
 const promptWord = ["『周囲の音』を表現してみて", "今の気分を表現してみて", "好きな音楽のノリを線で"]
 
 [Math.floor(Math.random() * 3)]; // お題の単語をランダムに選択
 let showingPrompt = false;
 
-// お題ボタンを押したとき
-const promptButton = document.getElementById("promptButton");
+// お題
+const promptWords = ["波", "風", "雨", "光", "影", "音", "夢", "花", "鳥", "月"];
 
 promptButton.addEventListener("click", () => {
-    showingPrompt = true;
-    Word.textContent = `お題：${promptWord}`;
+    const word = promptWords[Math.floor(Math.random() * promptWords.length)];
+    wordDisplay.textContent = `お題：${word}`;
 });
-
-function updateWord() {
-    const magnitude = Math.hypot(promptWord);
-    Word.textContent =
-        `${promptWord}: `;
-}
 
 function drawMotionTrail() {
     if (motionTrail.length < 2) return;
@@ -407,6 +411,29 @@ async function enableMotionSensor() {
     }
 }
 
+    // 許可済みならセンサーを再開する
+function startMotion() {
+    if (!motionGranted) return;
+
+    window.removeEventListener("devicemotion", handleDeviceMotion);
+    previousMotion = null;
+    window.addEventListener("devicemotion", handleDeviceMotion);
+    motionReadout.textContent = "";
+}
+
+// センサーを止めて，揺れもリセットする
+function stopMotion() {
+    window.removeEventListener("devicemotion", handleDeviceMotion);
+    previousMotion = null;
+    waveStrength = 0;
+    motionReadout.textContent = "一時停止中（センサー停止）";
+}
+
+// 今の人の色を返す
+function getPlayerColor() {
+    return colors[currentPlayer % colors.length];
+}
+
 // pointerIdごとに、各指の座標と色を記録する
 const activeTouches = new Map();
 
@@ -461,34 +488,46 @@ function startInteraction() {
     if (isStarted) return;
 
     isStarted = true;
-    status.textContent = motionEnabled
-        ? "画面に触れて描こう。端末を振ると線が揺れます"
-        : "画面に触れて始めよう（振る操作は利用できません）";
-    if (!motionEnabled) {
-        status.textContent =
-            "センサーを利用できません。端末の設定や接続を確認してください";
-    }
-
-    startButton.textContent = "操作中";
-    startButton.disabled = true;
+    status.textContent = "画面に触れて描こう";
     requestAnimationFrame(animateShake);
 
     console.log("OTOIRO：操作を開始しました");
 }
 
-// センサーの許可は最初の操作時に一度だけ求める
 async function requestMotionOnce() {
     if (motionRequested) return;
     motionRequested = true;
 
-    const motionEnabled = await enableMotionSensor();
-    if (!motionEnabled) {
+    motionGranted = await enableMotionSensor();
+    if (!motionGranted) {
         motionReadout.textContent = "加速度センサーを利用できません";
     }
 }
 
+// 一時停止して次の人へ交代
+function pauseDrawing() {
+    if (isPaused) return;
+
+    isPaused = true;
+    activeTouches.clear();
+    stopMotion();
+
+    currentPlayer++;
+    pauseButton.disabled = true;
+    status.textContent =
+        `${currentPlayer + 1}人目の番です．画面に触れると描き始めます`;
+}
+
+// 次の人が触れたら再開
+function resumeDrawing() {
+    isPaused = false;
+    startMotion();
+    pauseButton.disabled = false;
+}
+
+pauseButton.addEventListener("click", pauseDrawing);
+
 startInteraction();
-// requestMotionOnce();
 
 // ========================================
 // 5. 指が触れたとき
@@ -509,8 +548,13 @@ canvas.addEventListener("pointerdown", (event) => {
 
     event.preventDefault();
 
+    // 一時停止中なら，このタッチで再開する
+    if (isPaused) {
+        resumeDrawing();
+    }
+
     const pos = fn.getPosition(event, canvas);
-    const color = colors[activeTouches.size % colors.length];
+    const color = getPlayerColor();   // 指の本数ではなく人で決める
 
     activeTouches.set(event.pointerId, {
         startX: pos.x,
@@ -518,10 +562,12 @@ canvas.addEventListener("pointerdown", (event) => {
         x: pos.x,
         y: pos.y,
         color,
+        player: currentPlayer,        // 追加
         moved: false,
         stroke: {
             points: [{ x: pos.x, y: pos.y }],
             color,
+            player: currentPlayer,    // 追加
             width: 8,
             closed: false
         }
@@ -598,7 +644,8 @@ function endTouch(event) {
             x: touch.startX,
             y: touch.startY,
             radius: 5 + Math.random() * 20,
-            color: touch.color
+            color: touch.color,
+            player: touch.player
         });
     }
 
@@ -697,6 +744,11 @@ clearButton.addEventListener("click", () => {
     shakeOffsetY = 0;
     previousMotion = null;
     wordDisplay.textContent = "";
+    // 1人目からやり直す
+    currentPlayer = 0;
+    isPaused = false;
+    pauseButton.disabled = false;
+    startMotion();
     renderStrokes();
 });
 
