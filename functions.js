@@ -33,7 +33,7 @@ window.OTOIROFunctions = {
   },
 
   // タップ位置にランダムな大きさの円を描く
-drawRipple(ctx, x, y, color) {
+  drawRipple(ctx, x, y, color) {
     const radius = 5 + Math.random() * 20;
     // 半径は5〜25pxのランダムな値
 
@@ -42,7 +42,7 @@ drawRipple(ctx, x, y, color) {
     ctx.strokeStyle = color;
     ctx.lineWidth = 6;
     ctx.stroke();
-},
+  },
 
   // 音を鳴らす
   playSound(audioState, fingerCount) {
