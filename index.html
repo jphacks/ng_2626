@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTOIRO - Touch Art</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>
+            <h1>OTOIRO</h1>
+            <p>指先から、音とアートを。</p>
+        </div>
+        <button id="startButton" class="btn1">仮開始</button>
+        <button id="correctButton" class="btn2">形状を補正</button>
+        <button id="clearButton">リセット</button>
+    </header>
+
+    <main>
+        <div id="status">画面に触れて始めよう</div>
+        <canvas id="artCanvas"></canvas>
+        <p class="help">
+            タップで波紋、スワイプで描画。
+            2本指・3本指でも試してみてください。
+        </p>
+    </main>
+    <script src="functions.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>
