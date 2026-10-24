@@ -8,7 +8,7 @@
 const canvas = document.getElementById("artCanvas");
 const status = document.getElementById("status");
 const motionReadout = document.getElementById("motionReadout");
-const startButton = document.getElementById("startButton");
+// const startButton = document.getElementById("startButton");
 const clearButton = document.getElementById("clearButton");
 const correctButton = document.getElementById("correctButton");
 
@@ -69,7 +69,7 @@ const missingElements = [];
 if (!canvas) missingElements.push("#artCanvas");
 if (!status) missingElements.push("#status");
 if (!motionReadout) missingElements.push("#motionReadout");
-if (!startButton) missingElements.push("#startButton");
+// if (!startButton) missingElements.push("#startButton");
 if (!clearButton) missingElements.push("#clearButton");
 if (!ctx) missingElements.push("Canvas 2D context");
 
@@ -338,7 +338,16 @@ async function enableMotionSensor() {
 // pointerIdごとに、各指の座標と色を記録する
 const activeTouches = new Map();
 
-const colors = ["#52e5ff", "#ff6bd6", "#ffe66d"];
+// 色のセット（あとで中身を差し替えてください）
+const colorSets = [
+  ["#52e5ff", "#ff6bd6", "#ffe66d", "#7cff6b", "#b388ff"], // セット1：ネオン
+  ["#ff3b3b", "#ff9f1c", "#ffe600", "#00e676", "#2979ff"], // セット2：ビビッド原色
+  ["#ff4f8b", "#ff7a3d", "#c86bff", "#3dd9ff", "#3dffb0"], // セット3：トロピカル
+  ["#00f5d4", "#00bbf9", "#9b5de5", "#f15bb5", "#fee440"], // セット4：ポップ
+];
+
+// ランダムに1セット選ぶ
+const colors = colorSets[Math.floor(Math.random() * colorSets.length)];
 
 // 音声の状態を保存する
 const audioState = {
@@ -371,29 +380,34 @@ window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 // ========================================
-// 4. 開始ボタン
+// 4. 起動と同時に描画を開始
 // ========================================
 
-async function startInteraction() {
+let motionRequested = false;
+
+function startInteraction() {
     if (isStarted) return;
 
-    const motionEnabled = await enableMotionSensor();
     isStarted = true;
-    status.textContent = motionEnabled
-        ? "画面に触れて描こう。端末を振ると線が揺れます"
-        : "画面に触れて始めよう（振る操作は利用できません）";
-    if (!motionEnabled) {
-        motionReadout.textContent = "加速度センサーを利用できません";
-    }
-
-    startButton.textContent = "操作中";
-    startButton.disabled = true;
+    status.textContent = "画面に触れて描こう";
     requestAnimationFrame(animateShake);
 
     console.log("OTOIRO：操作を開始しました");
 }
 
-startButton.addEventListener("click", startInteraction);
+// センサーの許可は最初の操作時に一度だけ求める
+async function requestMotionOnce() {
+    if (motionRequested) return;
+    motionRequested = true;
+
+    const motionEnabled = await enableMotionSensor();
+    if (!motionEnabled) {
+        motionReadout.textContent = "加速度センサーを利用できません";
+    }
+}
+
+startInteraction();
+// requestMotionOnce();
 
 // ========================================
 // 5. 指が触れたとき
@@ -402,10 +416,11 @@ startButton.addEventListener("click", startInteraction);
 canvas.addEventListener("pointerdown", (event) => {
     console.log("pointerdown:", event.pointerType, event.pointerId);
 
-    if (!isStarted) {
+/*    if (!isStarted) {
         status.textContent = "先に開始ボタンを押してください";
         return;
     }
+*/
 
     if (event.pointerType === "mouse" && event.button !== 0) {
         return;
@@ -490,6 +505,11 @@ canvas.addEventListener("pointermove", (event) => {
 function endTouch(event) {
     const touch = activeTouches.get(event.pointerId);
     if (!touch) return;
+
+    // 最初に指を離したときにセンサーの許可を求める
+    if (event.type === "pointerup") {
+        requestMotionOnce();
+    }
 
     if (event.type === "pointerup" && !touch.moved) {
         strokes.push({
