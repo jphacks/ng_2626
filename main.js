@@ -124,39 +124,98 @@ function renderStrokes(list = strokes) {
 }
 
 function handleDeviceMotion(event) {
-    const acceleration = event.accelerationIncludingGravity;
-    if (!acceleration || acceleration.x == null || acceleration.y == null) return;
+    const acceleration = event.accelerationIncludingGravity
+        || event.acceleration;
+
+    if (
+        !acceleration ||
+        acceleration.x == null ||
+        acceleration.y == null
+    ) {
+        console.log("加速度データを取得できません");
+        return;
+    }
 
     if (previousMotion) {
         const dx = acceleration.x - previousMotion.x;
         const dy = acceleration.y - previousMotion.y;
-        shakeOffsetX = Math.max(-18, Math.min(18, dx * 2.5));
-        shakeOffsetY = Math.max(-18, Math.min(18, dy * 2.5));
+
+        // 振ったときの揺れを大きくする
+        shakeOffsetX = Math.max(
+            -25,
+            Math.min(25, shakeOffsetX + dx * 3)
+        );
+
+        shakeOffsetY = Math.max(
+            -25,
+            Math.min(25, shakeOffsetY + dy * 3)
+        );
     }
 
-    previousMotion = { x: acceleration.x, y: acceleration.y };
+    previousMotion = {
+        x: acceleration.x,
+        y: acceleration.y
+    };
 }
 
 function animateShake() {
-    shakeOffsetX *= 0.82;
-    shakeOffsetY *= 0.82;
-    renderStrokes();
-    if (isStarted) requestAnimationFrame(animateShake);
-}
+    // 徐々に元の位置へ戻す
+    shakeOffsetX *= 0.90;
+    shakeOffsetY *= 0.90;
 
+    // 小さな揺れはゼロにする
+    if (Math.abs(shakeOffsetX) < 0.1) {
+        shakeOffsetX = 0;
+    }
+
+    if (Math.abs(shakeOffsetY) < 0.1) {
+        shakeOffsetY = 0;
+    }
+
+    renderStrokes();
+
+    if (isStarted) {
+        requestAnimationFrame(animateShake);
+    }
+}
 async function enableMotionSensor() {
-    if (!("DeviceMotionEvent" in window)) return false;
+    if (!("DeviceMotionEvent" in window)) {
+        console.warn("DeviceMotionEventに対応していません");
+        return false;
+    }
 
     try {
-        if (typeof DeviceMotionEvent.requestPermission === "function") {
-            const permission = await DeviceMotionEvent.requestPermission();
-            if (permission !== "granted") return false;
+        // iOSなど、明示的な許可が必要なブラウザ
+        if (
+            typeof DeviceMotionEvent.requestPermission === "function"
+        ) {
+            const permission =
+                await DeviceMotionEvent.requestPermission();
+
+            if (permission !== "granted") {
+                console.warn("モーションセンサーが許可されませんでした");
+                return false;
+            }
         }
 
-        window.addEventListener("devicemotion", handleDeviceMotion);
+        // 古いリスナーの重複登録を防ぐ
+        window.removeEventListener(
+            "devicemotion",
+            handleDeviceMotion
+        );
+
+        previousMotion = null;
+
+        window.addEventListener(
+            "devicemotion",
+            handleDeviceMotion
+        );
+
+        console.log("モーションセンサーのイベントを登録しました");
         return true;
+
     } catch (error) {
-        console.warn("端末の動きを取得できませんでした:", error);
+        console.error("センサーの初期化に失敗しました:", error);
         return false;
     }
 }
