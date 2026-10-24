@@ -28,9 +28,21 @@ window.OTOIROFunctions = {
     ctx.beginPath();
     ctx.arc(x, y, 10, 0, Math.PI * 2);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 7;
     ctx.stroke();
   },
+
+  // タップ位置にランダムな大きさの円を描く
+drawRipple(ctx, x, y, color) {
+    const radius = 5 + Math.random() * 20;
+    // 半径は5〜25pxのランダムな値
+
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 6;
+    ctx.stroke();
+},
 
   // 音を鳴らす
   playSound(audioState, fingerCount) {
