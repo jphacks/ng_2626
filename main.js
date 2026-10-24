@@ -87,6 +87,15 @@ function renderStrokes(list = strokes) {
     ctx.translate(shakeOffsetX, shakeOffsetY);
 
     for (const stroke of list) {
+        if (stroke.type === "tap") {
+            ctx.beginPath();
+            ctx.arc(stroke.x, stroke.y, stroke.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = stroke.color;
+            ctx.lineWidth = 6;
+            ctx.stroke();
+            continue;
+        }
+
         const points = stroke.points;
         if (!points || points.length === 0) continue;
 
@@ -224,28 +233,28 @@ canvas.addEventListener("pointerdown", (event) => {
     const pos = fn.getPosition(event, canvas);
     const color = colors[activeTouches.size % colors.length];
 
-    const stroke = {
-        points: [{ x: pos.x, y: pos.y }],
-        color,
-        width: 3,
-        closed: false
-    };
-    strokes.push(stroke);
-
     activeTouches.set(event.pointerId, {
+        startX: pos.x,
+        startY: pos.y,
         x: pos.x,
         y: pos.y,
-        color: color,
-        stroke
+        color,
+        moved: false,
+        stroke: {
+            points: [{ x: pos.x, y: pos.y }],
+            color,
+            width: 3,
+            closed: false
+        }
     });
 
     // キャンバスの外へ指が動いても追跡する
     canvas.setPointerCapture(event.pointerId);
 
-    fn.drawRipple(ctx, pos.x, pos.y, color);
 
     const count = activeTouches.size;
     fn.updateStatus(status, count);
+    status.textContent = "タップ判定中";
     fn.playSound(audioState, count);
 });
 
@@ -262,6 +271,17 @@ canvas.addEventListener("pointermove", (event) => {
     event.preventDefault();
 
     const pos = fn.getPosition(event, canvas);
+    const dx = pos.x - touch.startX;
+    const dy = pos.y - touch.startY;
+    const distance = Math.hypot(dx, dy);
+
+    if (!touch.moved) {
+        if (distance <= 8) return;
+
+        touch.moved = true;
+        strokes.push(touch.stroke);
+        status.textContent = "スワイプ中";
+    }
 
     ctx.beginPath();
     ctx.moveTo(touch.x, touch.y);
@@ -285,10 +305,27 @@ canvas.addEventListener("pointermove", (event) => {
 // ========================================
 
 function endTouch(event) {
-    if (!activeTouches.has(event.pointerId)) return;
+    const touch = activeTouches.get(event.pointerId);
+    if (!touch) return;
+
+    if (event.type === "pointerup" && !touch.moved) {
+        strokes.push({
+            type: "tap",
+            x: touch.startX,
+            y: touch.startY,
+            radius: 5 + Math.random() * 20,
+            color: touch.color
+        });
+    }
 
     activeTouches.delete(event.pointerId);
+    renderStrokes();
     fn.updateStatus(status, activeTouches.size);
+    if (event.type === "pointerup") {
+        status.textContent = touch.moved ? "スワイプしました" : "タップしました";
+    } else {
+        status.textContent = "操作がキャンセルされました";
+    }
 
     console.log("指を離しました。残り:", activeTouches.size);
 }
@@ -369,4 +406,6 @@ clearButton.addEventListener("click", () => {
 });
 
 console.log("OTOIRO：JavaScriptの読み込み完了");
+
+
 
