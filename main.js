@@ -8,10 +8,10 @@
 const canvas = document.getElementById("artCanvas");
 const status = document.getElementById("status");
 const motionReadout = document.getElementById("motionReadout");
-// const startButton = document.getElementById("startButton");
+const promptButton = document.getElementById("startButton");
+const wordElement = document.getElementById("Word");
 const clearButton = document.getElementById("clearButton");
 const correctButton = document.getElementById("correctButton");
-
 
 const ctx = canvas?.getContext("2d");
 // 線の波打ちと残像を管理する
@@ -100,14 +100,19 @@ const maxMotionTrailPoints = 500;
 const promptWord = ["波", "風", "雨", "光", "影", "音", "夢", "花", "鳥", "月"]
 
 [Math.floor(Math.random() * 3)]; // お題の単語をランダムに選択
+
 let showingPrompt = false;
 
 // お題ボタンを押したとき
-const promptButton = document.getElementById("startButton");
+promptButton.addEventListener("click", async () => {
+    const index = Math.floor(Math.random() * promptWords.length);
+    promptWord = promptWords[index];
 
-promptButton.addEventListener("click", () => {
     showingPrompt = true;
-    Word.textContent = `お題：${promptWord}`;
+    wordElement.textContent = `お題：${promptWord}`;
+
+    // ユーザー操作中にセンサーの許可を取得する
+    await requestMotionOnce();
 });
 
 function updateWord() {
@@ -402,16 +407,8 @@ function startInteraction() {
     if (isStarted) return;
 
     isStarted = true;
-    status.textContent = motionEnabled
-        ? "画面に触れて描こう。端末を振ると線が揺れます"
-        : "画面に触れて始めよう（振る操作は利用できません）";
-    if (!motionEnabled) {
-        status.textContent =
-            "センサーを利用できません。端末の設定や接続を確認してください";
-    }
+    status.textContent = "画面に触れて始めよう";
 
-    startButton.textContent = "操作中";
-    startButton.disabled = true;
     requestAnimationFrame(animateShake);
 
     console.log("OTOIRO：操作を開始しました");
@@ -429,12 +426,8 @@ async function requestMotionOnce() {
 }
 
 // センサーの許可を取得してから操作を開始する
-async function initializeInteraction() {
-    await requestMotionOnce();
-    startInteraction();
-}
+startInteraction();
 
-initializeInteraction();
 
 // ========================================
 // 5. 指が触れたとき
@@ -642,7 +635,9 @@ clearButton.addEventListener("click", () => {
     shakeOffsetX = 0;
     shakeOffsetY = 0;
     previousMotion = null;
-    wordDisplay.textContent = "";
+    wordElement.textContent = "";
+    showingPrompt = false;
+    promptWord = "";
     renderStrokes();
 });
 
