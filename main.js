@@ -27,6 +27,9 @@ const trailFade = 0.005;
 //pythonサーバーの状態を取得
 let serverAvailable = false;
 
+// Pythonで生成した、にじみ・混色済みの画像
+let refinedImage = null;
+
 correctButton.disabled = true;
 correctButton.textContent = "補正サーバー未接続";
 
@@ -97,7 +100,7 @@ let motionTrail = [];
 const maxMotionTrailPoints = 500;
 
 // お題の表示設定
-const promptWord = ["波", "風", "雨", "光", "影", "音", "夢", "花", "鳥", "月"]
+const promptWord = ["『周囲の音』を表現してみて", "今の気分を表現してみて", "好きな音楽のノリを線で"]
 
 [Math.floor(Math.random() * 3)]; // お題の単語をランダムに選択
 let showingPrompt = false;
@@ -140,83 +143,139 @@ function getDeformedPoint(point, index, strokeIndex) {
     };
 }
 
+
 function drawStrokeList(targetCtx, list, deform = false) {
     list.forEach((stroke, strokeIndex) => {
-        targetCtx.beginPath();
+        const color = stroke.color || "#222222";
+        const width = stroke.type === "tap"
+            ? 6
+            : (stroke.width || 3);
 
-        if (stroke.type === "tap") {
-            const point = deform
-                ? getDeformedPoint(
-                    { x: stroke.x, y: stroke.y },
-                    0,
-                    strokeIndex
-                )
-                : { x: stroke.x, y: stroke.y };
+        const points = stroke.type === "tap"
+            ? [{ x: stroke.x, y: stroke.y }]
+            : stroke.points;
 
-            targetCtx.arc(
-                point.x,
-                point.y,
-                stroke.radius,
-                0,
-                Math.PI * 2
-            );
-
-            targetCtx.strokeStyle = stroke.color;
-            targetCtx.lineWidth = 6;
-            targetCtx.stroke();
-            return;
-        }
-
-        const points = stroke.points;
         if (!points || points.length === 0) return;
 
-        const first = deform
-            ? getDeformedPoint(points[0], 0, strokeIndex)
-            : points[0];
+        // パスを作る共通関数
+        function makePath() {
+            targetCtx.beginPath();
 
-        targetCtx.moveTo(first.x, first.y);
+            if (stroke.type === "tap") {
+                const point = deform
+                    ? getDeformedPoint(points[0], 0, strokeIndex)
+                    : points[0];
 
-        for (let i = 1; i < points.length; i++) {
-            const point = deform
-                ? getDeformedPoint(points[i], i, strokeIndex)
-                : points[i];
+                targetCtx.arc(
+                    point.x,
+                    point.y,
+                    stroke.radius || width / 2,
+                    0,
+                    Math.PI * 2
+                );
+                return;
+            }
 
-            targetCtx.lineTo(point.x, point.y);
+            const first = deform
+                ? getDeformedPoint(points[0], 0, strokeIndex)
+                : points[0];
+
+            targetCtx.moveTo(first.x, first.y);
+
+            for (let i = 1; i < points.length; i++) {
+                const point = deform
+                    ? getDeformedPoint(points[i], i, strokeIndex)
+                    : points[i];
+
+                targetCtx.lineTo(point.x, point.y);
+            }
+
+            if (stroke.closed) {
+                targetCtx.closePath();
+            }
         }
 
-        if (stroke.closed) {
-            targetCtx.closePath();
-        }
-
-        targetCtx.strokeStyle = stroke.color || "#52e5ff";
-        targetCtx.fillStyle = stroke.color || "#52e5ff";
-        targetCtx.lineWidth = stroke.width || 3;
+        // 1. 外側の薄い墨のにじみ
+        targetCtx.save();
+        targetCtx.globalAlpha = 0.03;
+        targetCtx.filter = "blur(6px)";
+        targetCtx.strokeStyle = color;
+        targetCtx.fillStyle = color;
+        targetCtx.lineWidth = width * 2.5;
         targetCtx.lineCap = "round";
         targetCtx.lineJoin = "round";
 
-        if (points.length === 1) {
-            targetCtx.arc(
-                first.x,
-                first.y,
-                (stroke.width || 3) / 2,
-                0,
-                Math.PI * 2
-            );
+        makePath();
+
+        if (stroke.type === "tap" || points.length === 1) {
             targetCtx.fill();
         } else {
             targetCtx.stroke();
         }
+        targetCtx.restore();
+
+        // 2. 中間の墨
+        targetCtx.save();
+        targetCtx.globalAlpha = 0.04;
+        targetCtx.filter = "blur(1.5px)";
+        targetCtx.strokeStyle = color;
+        targetCtx.fillStyle = color;
+        targetCtx.lineWidth = width * 1.5;
+        targetCtx.lineCap = "round";
+        targetCtx.lineJoin = "round";
+
+        makePath();
+
+        if (stroke.type === "tap" || points.length === 1) {
+            targetCtx.fill();
+        } else {
+            targetCtx.stroke();
+        }
+        targetCtx.restore();
+
+        // 3. 中心の濃い墨
+        targetCtx.save();
+        targetCtx.globalAlpha = 0.07;
+        targetCtx.filter = "none";
+        targetCtx.strokeStyle = color;
+        targetCtx.fillStyle = color;
+        targetCtx.lineWidth = width;
+        targetCtx.lineCap = "round";
+        targetCtx.lineJoin = "round";
+
+        makePath();
+
+        if (stroke.type === "tap" || points.length === 1) {
+            targetCtx.fill();
+        } else {
+            targetCtx.stroke();
+        }
+        targetCtx.restore();
     });
 }
 
+
 function renderStrokes(list = strokes) {
-    // メインキャンバスを消去
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 過去の軌跡を表示
+    // Pythonで生成した画像があれば、それを表示する
+    if (refinedImage && list === strokes) {
+        ctx.drawImage(
+            refinedImage,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        // にじみ画像の上に、端末を振った残像を重ねる
+        ctx.drawImage(trailCanvas, 0, 0);
+        return;
+    }
+
+    // 通常の描画モード
     ctx.drawImage(trailCanvas, 0, 0);
 
-    // 現在の線・点を波打たせて描画
     ctx.save();
     ctx.globalAlpha = 1;
     drawStrokeList(ctx, list, true);
