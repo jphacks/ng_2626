@@ -14,15 +14,21 @@
             <h1>OTOIRO</h1>
             <p>指先から、音とアートを。</p>
         </div>
-        <!-- <button id="startButton" class="btn1">仮３開始</button> -->
+        <button id="startButton" class="btn1">お題</button>
         <button id="correctButton" class="btn2">形状を補正</button>
         <button id="clearButton">リセット</button>
     </header>
 
     <main>
         <div id="status">画面に触れて始めよう</div>
-        <div id="motionReadout" aria-label="加速度センサーの変化量">
-            センサー入力: 待機中
+        <div id="Word" aria-label="お題"></div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="artCanvas"></canvas>
+
+            <button id="startButton" class="btn1">
+                開始
+            </button>
         </div>
         <canvas id="artCanvas"></canvas>
         <p class="help">
