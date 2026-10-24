@@ -49,6 +49,14 @@ main {
   padding: 12px;
 }
 
+#motionReadout {
+  margin: 0 auto 10px;
+  color: #9da8c5;
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 #artCanvas {
   display: block;
   width: 100%;
@@ -76,6 +84,29 @@ main {
   width: fit-content;
 }
 
+.canvas-container {
+  position: relative;
+  width: 100%;
+}
+
+/* キャンバスの中央に開始ボタンを配置 */
+.btn1 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+
+  padding: 14px 28px;
+  border: none;
+  border-radius: 8px;
+  background-color: lightblue;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* お題ボタン */
 .btn2 {
   margin: 0;
   border: none;
