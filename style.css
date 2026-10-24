@@ -49,6 +49,14 @@ main {
   padding: 12px;
 }
 
+#motionReadout {
+  margin: 0 auto 10px;
+  color: #9da8c5;
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 #artCanvas {
   display: block;
   width: 100%;

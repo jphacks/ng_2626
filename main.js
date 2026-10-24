@@ -7,11 +7,22 @@
 
 const canvas = document.getElementById("artCanvas");
 const status = document.getElementById("status");
+const motionReadout = document.getElementById("motionReadout");
 const startButton = document.getElementById("startButton");
 const clearButton = document.getElementById("clearButton");
 const correctButton = document.getElementById("correctButton");
 
 const ctx = canvas?.getContext("2d");
+// 線の波打ちと残像を管理する
+let waveStrength = 0;
+let wavePhase = 0;
+
+// 過去の軌跡を保存する透明キャンバス
+const trailCanvas = document.createElement("canvas");
+const trailCtx = trailCanvas.getContext("2d");
+
+// 残像の消える速さ（大きいほど早く消える）
+const trailFade = 0.1;
 //pythonサーバーの状態を取得
 let serverAvailable = false;
 
@@ -57,6 +68,7 @@ const missingElements = [];
 
 if (!canvas) missingElements.push("#artCanvas");
 if (!status) missingElements.push("#status");
+if (!motionReadout) missingElements.push("#motionReadout");
 if (!startButton) missingElements.push("#startButton");
 if (!clearButton) missingElements.push("#clearButton");
 if (!ctx) missingElements.push("Canvas 2D context");
@@ -80,46 +92,119 @@ let originalStrokes = [];
 let shakeOffsetX = 0;
 let shakeOffsetY = 0;
 let previousMotion = null;
+let motionTrail = [];
+const maxMotionTrailPoints = 500;
 
-function renderStrokes(list = strokes) {
-    ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-    ctx.save();
-    ctx.translate(shakeOffsetX, shakeOffsetY);
+function updateMotionReadout(deltaX, deltaY) {
+    const magnitude = Math.hypot(deltaX, deltaY);
+    motionReadout.textContent =
+        `加速度の変化量  ΔX: ${deltaX.toFixed(2)} / ΔY: ${deltaY.toFixed(2)} / 合成: ${magnitude.toFixed(2)} m/s²`;
+}
 
-    for (const stroke of list) {
+function drawMotionTrail() {
+    if (motionTrail.length < 2) return;
+
+    for (let i = 1; i < motionTrail.length; i++) {
+        const progress = i / motionTrail.length;
+        ctx.beginPath();
+        ctx.moveTo(motionTrail[i - 1].x, motionTrail[i - 1].y);
+        ctx.lineTo(motionTrail[i].x, motionTrail[i].y);
+        ctx.strokeStyle = `rgba(82, 229, 255, ${progress * 0.22})`;
+        ctx.lineWidth = 1;
+        ctx.lineCap = "round";
+        ctx.stroke();
+    }
+}
+
+function getDeformedPoint(point, index, strokeIndex) {
+    const phase = index * 0.25 + wavePhase + strokeIndex * 1.7;
+
+    return {
+        x: point.x + Math.sin(phase) * waveStrength,
+        y: point.y + Math.cos(phase * 0.8) * waveStrength * 0.6
+    };
+}
+
+function drawStrokeList(targetCtx, list, deform = false) {
+    list.forEach((stroke, strokeIndex) => {
+        targetCtx.beginPath();
+
         if (stroke.type === "tap") {
-            ctx.beginPath();
-            ctx.arc(stroke.x, stroke.y, stroke.radius, 0, Math.PI * 2);
-            ctx.strokeStyle = stroke.color;
-            ctx.lineWidth = 6;
-            ctx.stroke();
-            continue;
+            const point = deform
+                ? getDeformedPoint(
+                    { x: stroke.x, y: stroke.y },
+                    0,
+                    strokeIndex
+                )
+                : { x: stroke.x, y: stroke.y };
+
+            targetCtx.arc(
+                point.x,
+                point.y,
+                stroke.radius,
+                0,
+                Math.PI * 2
+            );
+
+            targetCtx.strokeStyle = stroke.color;
+            targetCtx.lineWidth = 6;
+            targetCtx.stroke();
+            return;
         }
 
         const points = stroke.points;
-        if (!points || points.length === 0) continue;
+        if (!points || points.length === 0) return;
 
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
+        const first = deform
+            ? getDeformedPoint(points[0], 0, strokeIndex)
+            : points[0];
 
-        if (points.length === 1) {
-            ctx.arc(points[0].x, points[0].y, (stroke.width || 3) / 2, 0, Math.PI * 2);
-        } else {
-            for (let i = 1; i < points.length; i++) {
-                ctx.lineTo(points[i].x, points[i].y);
-            }
-            if (stroke.closed) ctx.closePath();
+        targetCtx.moveTo(first.x, first.y);
+
+        for (let i = 1; i < points.length; i++) {
+            const point = deform
+                ? getDeformedPoint(points[i], i, strokeIndex)
+                : points[i];
+
+            targetCtx.lineTo(point.x, point.y);
         }
 
-        ctx.strokeStyle = stroke.color || "#52e5ff";
-        ctx.fillStyle = stroke.color || "#52e5ff";
-        ctx.lineWidth = stroke.width || 3;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        if (points.length === 1) ctx.fill();
-        else ctx.stroke();
-    }
+        if (stroke.closed) {
+            targetCtx.closePath();
+        }
 
+        targetCtx.strokeStyle = stroke.color || "#52e5ff";
+        targetCtx.fillStyle = stroke.color || "#52e5ff";
+        targetCtx.lineWidth = stroke.width || 3;
+        targetCtx.lineCap = "round";
+        targetCtx.lineJoin = "round";
+
+        if (points.length === 1) {
+            targetCtx.arc(
+                first.x,
+                first.y,
+                (stroke.width || 3) / 2,
+                0,
+                Math.PI * 2
+            );
+            targetCtx.fill();
+        } else {
+            targetCtx.stroke();
+        }
+    });
+}
+
+function renderStrokes(list = strokes) {
+    // メインキャンバスを消去
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 過去の軌跡を表示
+    ctx.drawImage(trailCanvas, 0, 0);
+
+    // 現在の線・点を波打たせて描画
+    ctx.save();
+    ctx.globalAlpha = 1;
+    drawStrokeList(ctx, list, true);
     ctx.restore();
 }
 
@@ -139,6 +224,9 @@ function handleDeviceMotion(event) {
     if (previousMotion) {
         const dx = acceleration.x - previousMotion.x;
         const dy = acceleration.y - previousMotion.y;
+        const magnitude = Math.hypot(dx, dy);
+
+        updateMotionReadout(dx, dy);
 
         // 振ったときの揺れを大きくする
         shakeOffsetX = Math.max(
@@ -150,6 +238,16 @@ function handleDeviceMotion(event) {
             -25,
             Math.min(25, shakeOffsetY + dy * 3)
         );
+        // 加速度の変化量から波の強さを計算
+
+        waveStrength = Math.min(
+            35,
+            waveStrength + magnitude * 1.8
+        );
+
+        // 波の位相を進める
+        wavePhase += magnitude * 0.25;
+
     }
 
     previousMotion = {
@@ -159,17 +257,34 @@ function handleDeviceMotion(event) {
 }
 
 function animateShake() {
-    // 徐々に元の位置へ戻す
-    shakeOffsetX *= 0.90;
-    shakeOffsetY *= 0.90;
-
-    // 小さな揺れはゼロにする
-    if (Math.abs(shakeOffsetX) < 0.1) {
-        shakeOffsetX = 0;
+    // 波の揺れを徐々に弱める
+    waveStrength *= 0.97;
+    if (waveStrength < 0.05) {
+        waveStrength = 0;
     }
 
-    if (Math.abs(shakeOffsetY) < 0.1) {
-        shakeOffsetY = 0;
+    // 波を少しずつ進める
+    wavePhase += 0.04;
+
+    // 残像を少しずつ透明にする
+    trailCtx.save();
+    trailCtx.globalCompositeOperation = "destination-out";
+    trailCtx.fillStyle = `rgba(0, 0, 0, ${trailFade})`;
+    trailCtx.fillRect(0, 0, trailCanvas.width, trailCanvas.height);
+    trailCtx.fillRect(
+        0,
+        0,
+        trailCanvas.width,
+        trailCanvas.height
+    );
+    trailCtx.restore();
+
+    // 波打った線を残像キャンバスへ追加
+    if (waveStrength > 0.5) {
+        trailCtx.save();
+        trailCtx.globalAlpha = 0.35;
+        drawStrokeList(trailCtx, strokes, true);
+        trailCtx.restore();
     }
 
     renderStrokes();
@@ -243,7 +358,13 @@ if (!fn) {
 
 function resizeCanvas() {
     fn.resizeCanvas(canvas, ctx);
+
+    // 残像キャンバスも同じサイズにする
+    trailCanvas.width = canvas.width;
+    trailCanvas.height = canvas.height;
+
     renderStrokes();
+
 }
 
 window.addEventListener("resize", resizeCanvas);
@@ -261,6 +382,9 @@ async function startInteraction() {
     status.textContent = motionEnabled
         ? "画面に触れて描こう。端末を振ると線が揺れます"
         : "画面に触れて始めよう（振る操作は利用できません）";
+    if (!motionEnabled) {
+        motionReadout.textContent = "加速度センサーを利用できません";
+    }
 
     startButton.textContent = "操作中";
     startButton.disabled = true;
@@ -452,19 +576,29 @@ correctButton.addEventListener("click", async () => {
 // ========================================
 
 clearButton.addEventListener("click", () => {
-    const rect = canvas.getBoundingClientRect();
-
-    ctx.clearRect(0, 0, rect.width, rect.height);
-
     status.textContent = "画面をリセットしました";
     console.log("OTOIRO：画面をリセットしました");
 
     strokes = [];
     originalStrokes = [];
     activeTouches.clear();
+    trailCtx.clearRect(
+        0,
+        0,
+        trailCanvas.width,
+        trailCanvas.height
+    );
+
+    waveStrength = 0;
+    wavePhase = 0;
+
+    shakeOffsetX = 0;
+    shakeOffsetY = 0;
+    previousMotion = null;
+    updateMotionReadout(0, 0);
+    renderStrokes();
 });
 
 console.log("OTOIRO：JavaScriptの読み込み完了");
-
 
 
