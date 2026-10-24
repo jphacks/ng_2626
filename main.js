@@ -7,10 +7,11 @@
 
 const canvas = document.getElementById("artCanvas");
 const status = document.getElementById("status");
-const motionReadout = document.getElementById("motionReadout");
+const wordDisplay = document.getElementById("Word");
 const startButton = document.getElementById("startButton");
 const clearButton = document.getElementById("clearButton");
 const correctButton = document.getElementById("correctButton");
+
 
 const ctx = canvas?.getContext("2d");
 // 線の波打ちと残像を管理する
@@ -68,7 +69,7 @@ const missingElements = [];
 
 if (!canvas) missingElements.push("#artCanvas");
 if (!status) missingElements.push("#status");
-if (!motionReadout) missingElements.push("#motionReadout");
+if (!wordDisplay) missingElements.push("#Word");
 if (!startButton) missingElements.push("#startButton");
 if (!clearButton) missingElements.push("#clearButton");
 if (!ctx) missingElements.push("Canvas 2D context");
@@ -95,10 +96,24 @@ let previousMotion = null;
 let motionTrail = [];
 const maxMotionTrailPoints = 500;
 
-function updateMotionReadout(deltaX, deltaY) {
-    const magnitude = Math.hypot(deltaX, deltaY);
-    motionReadout.textContent =
-        `加速度の変化量  ΔX: ${deltaX.toFixed(2)} / ΔY: ${deltaY.toFixed(2)} / 合成: ${magnitude.toFixed(2)} m/s²`;
+// お題の表示設定
+const promptWord = ["波", "風", "雨", "光", "影", "音", "夢", "花", "鳥", "月"]
+
+[Math.floor(Math.random() * 3)]; // お題の単語をランダムに選択
+let showingPrompt = false;
+
+// お題ボタンを押したとき
+const promptButton = document.getElementById("promptButton");
+
+promptButton.addEventListener("click", () => {
+    showingPrompt = true;
+    Word.textContent = `お題：${promptWord}`;
+});
+
+function updateWord() {
+    const magnitude = Math.hypot(promptWord);
+    Word.textContent =
+        `${promptWord}: `;
 }
 
 function drawMotionTrail() {
@@ -225,8 +240,6 @@ function handleDeviceMotion(event) {
         const dx = acceleration.x - previousMotion.x;
         const dy = acceleration.y - previousMotion.y;
         const magnitude = Math.hypot(dx, dy);
-
-        updateMotionReadout(dx, dy);
 
         // 振ったときの揺れを大きくする
         shakeOffsetX = Math.max(
@@ -383,7 +396,8 @@ async function startInteraction() {
         ? "画面に触れて描こう。端末を振ると線が揺れます"
         : "画面に触れて始めよう（振る操作は利用できません）";
     if (!motionEnabled) {
-        motionReadout.textContent = "加速度センサーを利用できません";
+        status.textContent =
+            "センサーを利用できません。端末の設定や接続を確認してください";
     }
 
     startButton.textContent = "操作中";
@@ -595,7 +609,7 @@ clearButton.addEventListener("click", () => {
     shakeOffsetX = 0;
     shakeOffsetY = 0;
     previousMotion = null;
-    updateMotionReadout(0, 0);
+    wordDisplay.textContent = "";
     renderStrokes();
 });
 
