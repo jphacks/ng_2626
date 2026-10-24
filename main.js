@@ -22,7 +22,7 @@ const trailCanvas = document.createElement("canvas");
 const trailCtx = trailCanvas.getContext("2d");
 
 // 残像の消える速さ（大きいほど早く消える）
-const trailFade = 0.1;
+const trailFade = 0.005;
 //pythonサーバーの状態を取得
 let serverAvailable = false;
 
@@ -268,7 +268,7 @@ function animateShake() {
 
     // 残像を少しずつ透明にする
     trailCtx.save();
-    trailCtx.globalCompositeOperation = "destination-out";
+    trailCtx.globalCompositeOperation = "lighter";
     trailCtx.fillStyle = `rgba(0, 0, 0, ${trailFade})`;
     trailCtx.fillRect(0, 0, trailCanvas.width, trailCanvas.height);
     trailCtx.fillRect(
@@ -426,7 +426,7 @@ canvas.addEventListener("pointerdown", (event) => {
         stroke: {
             points: [{ x: pos.x, y: pos.y }],
             color,
-            width: 3,
+            width: 8,
             closed: false
         }
     });
