@@ -89,7 +89,7 @@ if (missingElements.length > 0) {
 let isStarted = false;
 let strokes = [];
 let originalStrokes = [];
-
+let motionEnabled = false;
 let shakeOffsetX = 0;
 let shakeOffsetY = 0;
 let previousMotion = null;
@@ -103,7 +103,7 @@ const promptWord = ["波", "風", "雨", "光", "影", "音", "夢", "花", "鳥
 let showingPrompt = false;
 
 // お題ボタンを押したとき
-const promptButton = document.getElementById("promptButton");
+const promptButton = document.getElementById("startButton");
 
 promptButton.addEventListener("click", () => {
     showingPrompt = true;
@@ -353,10 +353,10 @@ const activeTouches = new Map();
 
 // 色のセット（あとで中身を差し替えてください）
 const colorSets = [
-  ["#52e5ff", "#ff6bd6", "#ffe66d", "#7cff6b", "#b388ff"], // セット1：ネオン
-  ["#ff3b3b", "#ff9f1c", "#ffe600", "#00e676", "#2979ff"], // セット2：ビビッド原色
-  ["#ff4f8b", "#ff7a3d", "#c86bff", "#3dd9ff", "#3dffb0"], // セット3：トロピカル
-  ["#00f5d4", "#00bbf9", "#9b5de5", "#f15bb5", "#fee440"], // セット4：ポップ
+    ["#52e5ff", "#ff6bd6", "#ffe66d", "#7cff6b", "#b388ff"], // セット1：ネオン
+    ["#ff3b3b", "#ff9f1c", "#ffe600", "#00e676", "#2979ff"], // セット2：ビビッド原色
+    ["#ff4f8b", "#ff7a3d", "#c86bff", "#3dd9ff", "#3dffb0"], // セット3：トロピカル
+    ["#00f5d4", "#00bbf9", "#9b5de5", "#f15bb5", "#fee440"], // セット4：ポップ
 ];
 
 // ランダムに1セット選ぶ
@@ -422,14 +422,19 @@ async function requestMotionOnce() {
     if (motionRequested) return;
     motionRequested = true;
 
-    const motionEnabled = await enableMotionSensor();
+    motionEnabled = await enableMotionSensor();
     if (!motionEnabled) {
         motionReadout.textContent = "加速度センサーを利用できません";
     }
 }
 
-startInteraction();
-// requestMotionOnce();
+// センサーの許可を取得してから操作を開始する
+async function initializeInteraction() {
+    await requestMotionOnce();
+    startInteraction();
+}
+
+initializeInteraction();
 
 // ========================================
 // 5. 指が触れたとき
@@ -438,11 +443,11 @@ startInteraction();
 canvas.addEventListener("pointerdown", (event) => {
     console.log("pointerdown:", event.pointerType, event.pointerId);
 
-/*    if (!isStarted) {
-        status.textContent = "先に開始ボタンを押してください";
-        return;
-    }
-*/
+    /*    if (!isStarted) {
+            status.textContent = "先に開始ボタンを押してください";
+            return;
+        }
+    */
 
     if (event.pointerType === "mouse" && event.button !== 0) {
         return;
