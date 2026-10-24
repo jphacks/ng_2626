@@ -26,7 +26,7 @@ window.OTOIROFunctions = {
   // タップ位置に波紋を描く
   drawRipple(ctx, x, y, color) {
     ctx.beginPath();
-    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.arc(x, y, 100, 0, Math.PI * 2);
     ctx.strokeStyle = color;
     ctx.lineWidth = 3;
     ctx.stroke();
