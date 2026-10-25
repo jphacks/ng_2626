@@ -18,7 +18,10 @@
 
 ## 動作デモ
 
-[![OTOIROの動作デモ](https://img.youtu.be/f-XKaN3TXQE?si=M-00ZxmF38s41ifS/0.jpg)](https://youtu.be/f-XKaN3TXQE?si=M-00ZxmF38s41ifS)
+OTOIROの操作方法と実際の動作を動画で紹介します。
+
+[![OTOIROの動作デモ](https://img.youtube.com/vi/f-XKaN3TXQE/0.jpg)](https://youtu.be/f-XKaN3TXQE)
+
 
 
 ### 特長
