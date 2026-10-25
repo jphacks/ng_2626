@@ -10,25 +10,26 @@
 
 <body>
     <header>
-        <!-- 左側：ロゴと補正ボタン -->
         <div class="header-left">
             <div class="logo">
                 <h1>OMOIRO</h1>
                 <p>指先から、音とアートを。</p>
             </div>
+
             <button id="correctButton" class="btn2">形状を補正</button>
         </div>
 
-        <!-- 右側：お題・次の人へ・リセット -->
-        <div class="header-right">
+        <div class="mobile-buttons">
             <button id="promptButton" class="btn1">お題</button>
-            <!-- 描き終わったら押す．署名（寄せ書き）モードに切り替わる -->
             <button id="finishButton" class="btn1">完成</button>
-            <!-- 描画中は描き手の交代，署名中は署名する人の交代に使う -->
+        </div>
+
+        <div class="tablet-buttons">
             <button id="pauseButton" class="btn1">次の人へ</button>
             <button id="clearButton">リセット</button>
         </div>
     </header>
+
 
     <main>
         <div id="status">画面に触れて始めよう</div>
