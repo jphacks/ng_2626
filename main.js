@@ -688,7 +688,7 @@ canvas.addEventListener("pointerdown", (event) => {
 
     const count = activeTouches.size;
     fn.updateStatus(status, count);
-    fn.playSound(audioState, count, 0.15);
+    fn.playSound(audioState, count, 1); // 音量（0〜1）．以前は0.15で小さすぎた
 });
 
 // ========================================
