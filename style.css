@@ -42,7 +42,7 @@ header p {
 button {
   background: #28283e;
   color: white;
-  border: 1px solid #666688;
+  border: 1px solid #ff6302;
   border-radius: 10px;
   padding: 10px 16px;
   font-size: 14px;
@@ -85,9 +85,10 @@ main {
   margin: 0;
   border: none;
   border-radius: 5px;
-  background-color: lightblue;
+  background-color: #83D4E8;
   padding: 10px 18px;
-  color: white;
+  color: #172235;
+  font-weight: 700;
   text-align: center;
   cursor: pointer;
   width: fit-content;
@@ -103,9 +104,10 @@ main {
   margin: 0;
   border: none;
   border-radius: 5px;
-  background-color: lightblue;
+  background-color: #83D4E8;
   padding: 10px 18px;
-  color: white;
+  color: #172235;
+  font-weight: 700;
   text-align: center;
   cursor: pointer;
   width: fit-content;
@@ -146,7 +148,8 @@ main {
   #pauseButton {
     position: static;
     transform: none;
-    margin-right: 24px; /* リセットボタンとの間隔 */
+    margin-right: 24px;
+    /* リセットボタンとの間隔 */
 
     padding: 10px 18px;
     font-size: 14px;
