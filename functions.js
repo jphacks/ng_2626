@@ -56,12 +56,63 @@ window.OTOIROFunctions = {
   //      これにより，割れずに出せる最大の大きさで鳴らせる．
   //
   // 音量を調整したいときは，下の SOUND_BOOST を変える（大きいほど音が大きい）．
-  async playSound(audioState, fingerCount, volume = 1) {
-    // 全体の増幅の倍率（1で増幅なし．3〜4くらいまでが目安）
-    const SOUND_BOOST = 3;
 
-    // 重ねる倍音（1オクターブ上）の大きさ（基本の音に対する割合）
-    const OVERTONE_LEVEL = 0.5;
+  // ========================================
+  // 音を鳴らす
+  // ========================================
+  async playSound(audioState, fingerCount, volume = 10) {
+    // ----------------------------------------
+    // 音の設定
+    // あとから音程・音色・長さを調整しやすいようにまとめる
+    // ----------------------------------------
+
+    // 全体の増幅倍率．タブレットでも聞こえやすい音量を維持する
+    const SOUND_BOOST = 20;
+
+    // 指の本数ごとの基本音の周波数（Hz）
+    // 1〜4本指の音程は変更せず，5本指だけ220Hzにする
+    const FREQUENCIES = {
+      1: 440,
+      2: 554,
+      3: 659,
+      4: 783,
+      5: 880,
+    };
+
+    // 指の本数ごとの音色
+    // 1〜4本指は従来どおりsine，5本指は柔らかいtriangleにする
+    const OSCILLATOR_TYPES = {
+      1: "sine",
+      2: "sine",
+      3: "sine",
+      4: "sine",
+      5: "sine"
+    };
+
+    // 音の長さ（秒）
+    // 1〜4本指は0.25秒，5本指は0.4秒のままにする
+    const DURATIONS = {
+      1: 0.25,
+      2: 0.25,
+      3: 0.25,
+      4: 0.25,
+      5: 0.4
+    };
+
+    // 1オクターブ上に重ねる倍音の大きさ
+    // 5本指だけ0.2に下げ，高音の強さを控えめにする
+    // 1〜4本指は従来どおり0.5を維持する
+    const OVERTONE_LEVELS = {
+      1: 0.5,
+      2: 0.5,
+      3: 0.5,
+      4: 0.5,
+      5: 0.5
+    };
+
+    // ----------------------------------------
+    // AudioContextの準備
+    // ----------------------------------------
 
     const AudioContextClass =
       window.AudioContext || window.webkitAudioContext;
@@ -72,13 +123,15 @@ window.OTOIROFunctions = {
     }
 
     try {
-      // AudioContextを作成する
+      // AudioContextが存在しない場合，または閉じている場合は作り直す
       if (
         !audioState.context ||
         audioState.context.state === "closed"
       ) {
         audioState.context = new AudioContextClass();
-        audioState.output = null; // 新しいAudioContextでは出口を作り直す
+
+        // 新しいAudioContextでは音の出口も作り直す
+        audioState.output = null;
       }
 
       const audio = audioState.context;
@@ -93,80 +146,131 @@ window.OTOIROFunctions = {
         return;
       }
 
-      // 音の出口（増幅 → リミッター → スピーカー）を最初の1回だけ作る
-      // すべての音がここを通るので，複数の指で同時に鳴らしても音割れしにくい
+      // ----------------------------------------
+      // 音の出口を準備する
+      // 増幅 → リミッター → スピーカーの順番は変更しない
+      // ----------------------------------------
+
       if (!audioState.output) {
         const boost = audio.createGain();
+
+        // 従来どおり全体の音量を3倍に増幅する
         boost.gain.value = SOUND_BOOST;
 
-        // リミッター（強い圧縮をかけるコンプレッサー）
+        // 音が大きくなりすぎたときに抑えるリミッター
         const limiter = audio.createDynamicsCompressor();
-        limiter.threshold.value = -10; // この大きさ（dB）を超えた分を抑える（同時に鳴っても割れないよう余裕を持たせる）
-        limiter.knee.value = 0;       // 境目でなめらかにせず，しっかり抑える
-        limiter.ratio.value = 20;     // 超えた分を1/20に抑える
-        limiter.attack.value = 0.002; // 抑え始めるまでの時間（秒）
-        limiter.release.value = 0.1;  // 抑えるのをやめるまでの時間（秒）
+        limiter.threshold.value = -10;
+        limiter.knee.value = 0;
+        limiter.ratio.value = 20;
+        limiter.attack.value = 0.002;
+        limiter.release.value = 0.1;
 
+        // 接続順序は従来どおりにする
         boost.connect(limiter);
         limiter.connect(audio.destination);
+
+        // すべての音が共通の出口を通るようにする
         audioState.output = boost;
       }
+
+      // ----------------------------------------
+      // 指の本数に応じた音を準備する
+      // ----------------------------------------
 
       // 指の本数を1〜5本に制限する
       const count = Math.max(1, Math.min(fingerCount, 5));
 
-      // 指の本数ごとに音程を変える
-      // （以前は5本指の音程がなく，5本指のときにエラーで音が鳴らなかったので追加）
-      const frequencies = {
-        1: 440,
-        2: 554,
-        3: 659,
-        4: 783,
-        5: 880,
-      };
-
-      const duration = count === 5 ? 0.4 : 0.25;
-
       // 指定された音量を使う（0〜1）
       const safeVolume = Math.max(0, Math.min(volume, 1));
 
-      // 0なら完全に無音にする
+      // 音量が0の場合は再生しない
       if (safeVolume === 0) {
         return;
       }
 
       const now = audio.currentTime;
+      const frequency = FREQUENCIES[count];
+      const duration = DURATIONS[count];
+      const overtoneLevel = OVERTONE_LEVELS[count];
 
+      // ----------------------------------------
       // 音量の変化（エンベロープ）
-      // いきなり最大にすると「プツッ」というノイズが出るので，ごく短い時間で立ち上げる
+      // ----------------------------------------
+
+      // 急に音を出すときの「プツッ」というノイズを防ぐ
+      // 従来どおり5ミリ秒で立ち上げる
       const gain = audio.createGain();
+
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(safeVolume, now + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      gain.gain.exponentialRampToValueAtTime(
+        safeVolume,
+        now + 0.005
+      );
+
+      // 指定した長さで音を減衰させる
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        now + duration
+      );
+
+      // 共通の増幅・リミッターにつなぐ
       gain.connect(audioState.output);
 
+      // ----------------------------------------
       // 基本の音
+      // ----------------------------------------
+
       const oscillator = audio.createOscillator();
-      oscillator.type = count === 5 ? "square" : "sine"; // 5本指だけ音色を変える
-      oscillator.frequency.setValueAtTime(frequencies[count], now);
+
+      // 1〜4本指はsine，5本指はtriangleにする
+      // 三角波は矩形波より高次の倍音が少なく，柔らかい音になる
+      oscillator.type = OSCILLATOR_TYPES[count];
+
+      // 指の本数に対応した音程を設定する
+      oscillator.frequency.setValueAtTime(frequency, now);
+
       oscillator.connect(gain);
 
-      // 1オクターブ上の倍音（音色を明るくして聞こえやすくする）
+      // ----------------------------------------
+      // 1オクターブ上の倍音
+      // ----------------------------------------
+
       const overtone = audio.createOscillator();
       const overtoneGain = audio.createGain();
+
+      // 倍音は従来どおりsineにする
       overtone.type = "sine";
-      overtone.frequency.setValueAtTime(frequencies[count] * 2, now);
-      overtoneGain.gain.value = OVERTONE_LEVEL;
+
+      // 基本音の2倍の周波数を設定する
+      // 5本指の場合は220Hz × 2 = 440Hzになる
+      overtone.frequency.setValueAtTime(
+        frequency * 2,
+        now
+      );
+
+      // 5本指だけ0.2にし，倍音を控えめにする
+      // 1〜4本指は従来どおり0.5
+      overtoneGain.gain.value = overtoneLevel;
+
       overtone.connect(overtoneGain);
       overtoneGain.connect(gain);
 
+      // ----------------------------------------
+      // 再生開始・終了
+      // ----------------------------------------
+
       oscillator.start(now);
       overtone.start(now);
+
       oscillator.stop(now + duration);
       overtone.stop(now + duration);
 
       console.log(
-        `音を再生：${count}本、音量=${safeVolume}`,
+        `音を再生：${count}本`,
+        `周波数=${frequency}Hz`,
+        `音色=${OSCILLATOR_TYPES[count]}`,
+        `倍音=${overtoneLevel}`,
+        `音量=${safeVolume}`,
         `AudioContext=${audio.state}`
       );
     } catch (error) {
