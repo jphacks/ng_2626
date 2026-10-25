@@ -468,7 +468,7 @@ async function enableMotionSensor() {
     }
 }
 
-    // 許可済みならセンサーを再開する
+// 許可済みならセンサーを再開する
 function startMotion() {
     if (!motionGranted) return;
 
@@ -496,10 +496,10 @@ const activeTouches = new Map();
 
 // 色のセット（あとで中身を差し替えてください）
 const colorSets = [
-  ["#52e5ff", "#ff6bd6", "#ffe66d", "#7cff6b", "#b388ff"], // セット1：ネオン
-  ["#ff3b3b", "#ff9f1c", "#ffe600", "#00e676", "#2979ff"], // セット2：ビビッド原色
-  ["#ff4f8b", "#ff7a3d", "#c86bff", "#3dd9ff", "#3dffb0"], // セット3：トロピカル
-  ["#00f5d4", "#00bbf9", "#9b5de5", "#f15bb5", "#fee440"], // セット4：ポップ
+    ["#52e5ff", "#ff6bd6", "#ffe66d", "#7cff6b", "#b388ff"], // セット1：ネオン
+    ["#ff3b3b", "#ff9f1c", "#ffe600", "#00e676", "#2979ff"], // セット2：ビビッド原色
+    ["#ff4f8b", "#ff7a3d", "#c86bff", "#3dd9ff", "#3dffb0"], // セット3：トロピカル
+    ["#00f5d4", "#00bbf9", "#9b5de5", "#f15bb5", "#fee440"], // セット4：ポップ
 ];
 
 // ランダムに1セット選ぶ
@@ -509,6 +509,7 @@ const colors = colorSets[Math.floor(Math.random() * colorSets.length)];
 const audioState = {
     context: null
 };
+const SOUND_VOLUME = 1.0; // 音量を小さくする（0.0〜1.0）
 
 // 関数を短く呼び出せるようにする
 const fn = window.OTOIROFunctions;
@@ -602,11 +603,11 @@ startInteraction();
 canvas.addEventListener("pointerdown", (event) => {
     console.log("pointerdown:", event.pointerType, event.pointerId);
 
-/*    if (!isStarted) {
-        status.textContent = "先に開始ボタンを押してください";
-        return;
-    }
-*/
+    /*    if (!isStarted) {
+            status.textContent = "先に開始ボタンを押してください";
+            return;
+        }
+    */
 
     if (event.pointerType === "mouse" && event.button !== 0) {
         return;
@@ -657,8 +658,7 @@ canvas.addEventListener("pointerdown", (event) => {
 
     const count = activeTouches.size;
     fn.updateStatus(status, count);
-    status.textContent = "タップ判定中";
-    fn.playSound(audioState, count);
+    fn.playSound(audioState, count, 0.15);
 });
 
 // ========================================
