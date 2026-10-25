@@ -155,7 +155,7 @@ if (!saveButton) missingElements.push("#saveButton");
 
 if (missingElements.length > 0) {
     console.error(
-        "OTOIRO：HTML要素が見つかりません:",
+        "OMOIRO：HTML要素が見つかりません:",
         missingElements.join(", ")
     );
     throw new Error("HTMLのIDとJavaScriptを確認してください");
@@ -605,7 +605,7 @@ function startInteraction() {
     status.textContent = "画面に触れて描こう";
     requestAnimationFrame(animateShake);
 
-    console.log("OTOIRO：操作を開始しました");
+    console.log("OMOIRO：操作を開始しました");
 }
 
 async function requestMotionOnce() {
@@ -876,7 +876,7 @@ correctButton.addEventListener("click", async () => {
 
 clearButton.addEventListener("click", () => {
     status.textContent = "画面をリセットしました";
-    console.log("OTOIRO：画面をリセットしました");
+    console.log("OMOIRO：画面をリセットしました");
 
     strokes = [];
     originalStrokes = [];
@@ -1172,7 +1172,7 @@ function sanitizeFileName(name) {
 //   │ 背景＋作品＋署名 │
 //   ├──────────────┤
 //   │ タイトル         │
-//   │ 日付・お題  OTOIRO│
+//   │ 日付・お題  OMOIRO│
 //   └──────────────┘
 function buildExportCanvas(title) {
     // 最新の状態を画面に描いておく
@@ -1222,7 +1222,7 @@ function buildExportCanvas(title) {
     o.fillText(info, 20, h + 52, w - 120);
 
     o.textAlign = "right";
-    o.fillText("OTOIRO", w - 20, h + 52);
+    o.fillText("OMOIRO", w - 20, h + 52);
 
     return out;
 }
@@ -1300,6 +1300,5 @@ saveButton.addEventListener("click", async () => {
 });
 
 
-console.log("OTOIRO：JavaScriptの読み込み完了");
-
+console.log("OMOIRO：JavaScriptの読み込み完了");
 
