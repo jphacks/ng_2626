@@ -246,7 +246,10 @@ function drawStrokeList(targetCtx, list, deform = false) {
 
         // 1. 外側の薄い墨のにじみ
         targetCtx.save();
-        targetCtx.globalAlpha = 0.03;
+        // 不透明度：振ったあとの濃さに合わせて 0.03 → 0.8 に変更
+        // （以前は振ったときの残像が重なって初めて濃く見えていたため，
+        //   起動直後は線が薄く見えていた）
+        targetCtx.globalAlpha = 0.8;
         targetCtx.filter = "blur(6px)";
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
@@ -265,7 +268,8 @@ function drawStrokeList(targetCtx, list, deform = false) {
 
         // 2. 中間の墨
         targetCtx.save();
-        targetCtx.globalAlpha = 0.04;
+        // 不透明度：0.04 → 1（振ったあとの濃さに合わせる）
+        targetCtx.globalAlpha = 1;
         targetCtx.filter = "blur(1.5px)";
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
@@ -284,7 +288,8 @@ function drawStrokeList(targetCtx, list, deform = false) {
 
         // 3. 中心の濃い墨
         targetCtx.save();
-        targetCtx.globalAlpha = 0.07;
+        // 不透明度：0.07 → 1（振ったあとの濃さに合わせる）
+        targetCtx.globalAlpha = 1;
         targetCtx.filter = "none";
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
