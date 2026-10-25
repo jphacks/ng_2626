@@ -18,9 +18,8 @@
 
 ## 動作デモ
 
-OTOIROの操作方法と実際の動作を動画で紹介します。
-サムネ画像をクリックすると動作動画が見れます
-[![OTOIROの動作デモ](https://img.youtube.com/vi/f-XKaN3TXQE/0.jpg)](https://youtu.be/f-XKaN3TXQE)
+OMOIROの操作方法と実際の動作を動画で紹介します。サムネ画像をクリックすると動作動画が見れます
+[![OMOIROの動作デモ](https://img.youtube.com/vi/f-XKaN3TXQE/0.jpg)](https://youtu.be/f-XKaN3TXQE)
 
 
 
