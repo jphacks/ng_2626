@@ -714,7 +714,9 @@ canvas.addEventListener("pointerdown", (event) => {
 
     const count = activeTouches.size;
     fn.updateStatus(status, count);
-    fn.playSound(audioState, count, 1); // 音量（0〜1）．以前は0.15で小さすぎた
+    // 音を鳴らす（最初のタップで鳴らせないときは，指を離したときに鳴らす）
+    // 詳しくは「14. 音を鳴らせる状態にする」を参照
+    playTouchSound(activeTouches.get(event.pointerId), count);
 });
 
 // ========================================
@@ -783,6 +785,14 @@ function endTouch(event) {
     // 最初に指を離したときにセンサーの許可を求める
     if (event.type === "pointerup") {
         requestMotionOnce();
+
+        // 指を離したときは「操作」と認められるので，ここで音を出せる状態にする
+        unlockAudio();
+
+        // 触れた瞬間に鳴らせなかった音があれば，ここで鳴らす（主に初回のタップ）
+        if (touch.pendingSoundCount) {
+            playPendingSound(touch.pendingSoundCount);
+        }
     }
 
     if (event.type === "pointerup" && !touch.moved) {
@@ -1299,6 +1309,108 @@ saveButton.addEventListener("click", async () => {
     status.textContent = `「${exportFile.name}」を保存しました`;
 });
 
+
+// ========================================
+// 14. 音を鳴らせる状態にする（初回タップで音が出ない問題の対策）
+// ========================================
+//
+// スマホのブラウザは，勝手に音が鳴らないよう「ユーザーの操作」をきっかけにしないと音を出せない．
+// ところが iPhone・iPad などでは，指が触れた瞬間（pointerdown）は操作と認められず，
+// 指を離したとき（pointerup）やボタンを押したとき（click）だけが操作と認められる．
+//
+// そのため，以前は次のようになっていた．
+//   起動 → 最初のタップ（触れた瞬間に音を鳴らそうとする）→ 許可されず無音
+//        → 指を離す → ここで初めて音を出せる状態になる → 2回目以降は鳴る
+//
+// 対策：
+//   1. 指を離したとき・ボタンを押したときに，音を出せる状態にしておく（unlockAudio）
+//   2. 最初のタップで鳴らせなかった音は覚えておき，指を離したときに鳴らす
+
+// 音を出せる状態か
+function isAudioRunning() {
+    return !!audioState.context && audioState.context.state === "running";
+}
+
+// 音を出せる状態にする（ユーザーの操作の中で呼ぶ）
+function unlockAudio() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    // まだ音の準備ができていなければ作る（functions.js の playSound と同じものを使う）
+    if (!audioState.context || audioState.context.state === "closed") {
+        audioState.context = new AudioContextClass();
+        audioState.output = null; // 音の出口は playSound の中で作り直される
+    }
+
+    const audio = audioState.context;
+
+    // 一時停止（suspended）や中断（interrupted）なら再開する
+    // ※ await せずに呼ぶのが大事（操作の中で呼んだことになるように）
+    if (audio.state !== "running") {
+        audio.resume().catch((error) => {
+            console.warn("音を再開できませんでした:", error);
+        });
+    }
+
+    // iPhone・iPad対策：最初の1回だけ，無音の音を一瞬鳴らして音の出口を開けておく
+    if (!audioState.unlocked) {
+        const buffer = audio.createBuffer(1, 1, 22050);
+        const source = audio.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audio.destination);
+        source.start(0);
+        audioState.unlocked = true;
+    }
+}
+
+// 音を出せる状態になるまで，最大 timeout ミリ秒待つ
+async function waitForAudio(timeout) {
+    if (isAudioRunning()) return true;
+
+    const start = performance.now();
+    while (performance.now() - start < timeout) {
+        await new Promise((resolve) => setTimeout(resolve, 16));
+        if (isAudioRunning()) return true;
+    }
+    return false;
+}
+
+// 指が触れたときの音
+// 音を出せる状態ならすぐ鳴らし，まだならタッチに「あとで鳴らす」と覚えておく
+async function playTouchSound(touch, count) {
+    if (isAudioRunning()) {
+        fn.playSound(audioState, count, 1); // 音量（0〜1）
+        return;
+    }
+
+    // 触れた瞬間でも音を出せるブラウザ（PCなど）もあるので，まず試してみる
+    unlockAudio();
+    if (await waitForAudio(150)) {
+        fn.playSound(audioState, count, 1);
+        return;
+    }
+
+    // 鳴らせなかったので，指を離したときに鳴らす
+    touch.pendingSoundCount = count;
+}
+
+// 指を離したときに，鳴らせなかった音を鳴らす
+async function playPendingSound(count) {
+    if (await waitForAudio(500)) {
+        fn.playSound(audioState, count, 1);
+    }
+}
+
+// ボタンを押したときも「操作」なので，音を出せる状態にしておく
+// （お題ボタンなどを先に押した場合は，最初のタップから音が鳴る）
+document.addEventListener("click", unlockAudio);
+
+// ほかのアプリから戻ってきたとき，音が止まっていたら次の操作で再開できるように印を戻す
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !isAudioRunning()) {
+        audioState.unlocked = false;
+    }
+});
 
 console.log("OTOIRO：JavaScriptの読み込み完了");
 
