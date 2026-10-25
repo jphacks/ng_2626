@@ -22,6 +22,9 @@
         <!-- 右側：お題・次の人へ・リセット -->
         <div class="header-right">
             <button id="promptButton" class="btn1">お題</button>
+            <!-- 描き終わったら押す．署名（寄せ書き）モードに切り替わる -->
+            <button id="finishButton" class="btn1">完成</button>
+            <!-- 描画中は描き手の交代，署名中は署名する人の交代に使う -->
             <button id="pauseButton" class="btn1">次の人へ</button>
             <button id="clearButton">リセット</button>
         </div>
@@ -31,9 +34,21 @@
         <div id="status">画面に触れて始めよう</div>
         <div id="motionReadout"></div>
         <div id="Word" aria-label="お題"></div>
+
+        <!-- 署名中だけ表示する操作エリア -->
+        <div id="signControls" class="mode-controls" hidden>
+            <button id="redoSignButton">自分の署名を書き直す</button>
+        </div>
+
         <div class="canvas-container">
             <canvas id="artCanvas"></canvas>
+        </div>
 
+        <!-- 署名が終わったあとに表示する，タイトル入力と保存のエリア -->
+        <div id="finishPanel" class="finish-panel" hidden>
+            <label for="titleInput">作品のタイトル</label>
+            <input id="titleInput" type="text" maxlength="40" autocomplete="off">
+            <button id="saveButton" class="btn1">画像を保存・共有</button>
         </div>
         <p class="help">
             タップで波紋、スワイプで描画。
