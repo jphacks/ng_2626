@@ -39,7 +39,10 @@
 * 制作のハードルを下げるため、直感的な操作にこだわりました
 
 ## 開発技術
-Python,JavaScript,HTML,CSS
+* Python
+* JavaScript
+* HTML
+* CSS
 
 ### 活用した技術
 * 加速度センサ
