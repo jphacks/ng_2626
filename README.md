@@ -1,6 +1,6 @@
 # 『OMOIRO』
 
-[![IMAGE ALT TEXT HERE](https://jphacks.com/wp-content/uploads/2026/07/IMG_5316.png)](https://www.youtube.com/watch?v=piaNsc6ilBI)
+[![OMOIROで描いた作品「さんしょくだんご」](https://github.com/user-attachments/assets/05eb2931-262d-4a9c-89cf-6986b9004e87)](https://youtu.be/f-XKaN3TXQE)
 
 ## 製品概要
 複数人で1台の端末を順番に操作し、1枚の絵を共同制作するプロダクトです。
