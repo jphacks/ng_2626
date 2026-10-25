@@ -158,7 +158,7 @@ const promptWord = ["『周囲の音』を表現してみて", "今の気分を�
 let showingPrompt = false;
 
 // お題
-const promptWords = ["波", "風", "雨", "光", "影", "音", "夢", "花", "鳥", "月"];
+const promptWords = ["今の気分を形で", "好きな音楽のノリを形で", "今いる場所の空気を形で", "未来の想像を形で", "周囲の音を形で", "最近の出来事を形で", "好きな季節を形で", "自分の感情を形で", "夢の中の景色を形で"];
 
 promptButton.addEventListener("click", () => {
     const word = promptWords[Math.floor(Math.random() * promptWords.length)];
