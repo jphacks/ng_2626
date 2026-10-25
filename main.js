@@ -29,6 +29,31 @@ const ctx = canvas?.getContext("2d");
 let waveStrength = 0;
 let wavePhase = 0;
 
+// ---- シェイクの感度と揺れの大きさ ----
+// 加速度センサーの値は，手に持っているだけ・少し傾けただけでも細かく変化する．
+// そのまま使うと「振ったつもりがないのに揺れる」ため，小さな変化は無視する．
+const SHAKE_THRESHOLD = 3;     // この値（m/s²）より小さい加速度の変化は無視する（大きいほど鈍くなる）
+const SHAKE_SENSITIVITY = 1.0; // 振ったときの揺れの増え方（変更前は1.8．小さいほど鈍くなる）
+const MAX_WAVE_STRENGTH = 15;  // 線が揺れて広がる最大の幅（px）（変更前は35．小さいほど細くなる）
+
+// ---- 線の3層（外側のにじみ・中間・中心）の不透明度 ----
+// 静止しているときは濃く表示し，端末を振っている間だけ元の薄い値に近づけて透けさせる．
+// 揺れが収まる（waveStrengthが0に戻る）と，自然に静止時の濃さへ戻る．
+const INK_ALPHA_STILL = [0.8, 1, 1];        // 静止時の不透明度（外側・中間・中心）
+const INK_ALPHA_SHAKE = [0.03, 0.04, 0.07]; // 強く振っているときの不透明度（変更前の元の値）
+const SHAKE_ALPHA_FULL = 8;                  // 揺れの強さがこの値以上で「強く振っている」扱い（最大は MAX_WAVE_STRENGTH）
+
+// 揺れの強さに応じた不透明度を返す（layer：0=外側，1=中間，2=中心）
+function getInkAlpha(layer) {
+    // 0（静止）〜1（強く振っている）の割合
+    const t = Math.min(waveStrength / SHAKE_ALPHA_FULL, 1);
+    const still = INK_ALPHA_STILL[layer];
+    const shake = INK_ALPHA_SHAKE[layer];
+
+    // 揺れが強いほど，静止時の値から元の薄い値へ近づける
+    return still + (shake - still) * t;
+}
+
 // 過去の軌跡を保存する透明キャンバス
 const trailCanvas = document.createElement("canvas");
 const trailCtx = trailCanvas.getContext("2d");
@@ -246,10 +271,8 @@ function drawStrokeList(targetCtx, list, deform = false) {
 
         // 1. 外側の薄い墨のにじみ
         targetCtx.save();
-        // 不透明度：振ったあとの濃さに合わせて 0.03 → 0.8 に変更
-        // （以前は振ったときの残像が重なって初めて濃く見えていたため，
-        //   起動直後は線が薄く見えていた）
-        targetCtx.globalAlpha = 0.8;
+        // 不透明度：静止時は濃く，振っている間は薄くする（getInkAlpha を参照）
+        targetCtx.globalAlpha = getInkAlpha(0);
         targetCtx.filter = "blur(6px)";
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
@@ -268,8 +291,7 @@ function drawStrokeList(targetCtx, list, deform = false) {
 
         // 2. 中間の墨
         targetCtx.save();
-        // 不透明度：0.04 → 1（振ったあとの濃さに合わせる）
-        targetCtx.globalAlpha = 1;
+        targetCtx.globalAlpha = getInkAlpha(1);
         targetCtx.filter = "blur(1.5px)";
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
@@ -288,8 +310,7 @@ function drawStrokeList(targetCtx, list, deform = false) {
 
         // 3. 中心の濃い墨
         targetCtx.save();
-        // 不透明度：0.07 → 1（振ったあとの濃さに合わせる）
-        targetCtx.globalAlpha = 1;
+        targetCtx.globalAlpha = getInkAlpha(2);
         targetCtx.filter = "none";
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
@@ -354,7 +375,10 @@ function handleDeviceMotion(event) {
     if (previousMotion) {
         const dx = acceleration.x - previousMotion.x;
         const dy = acceleration.y - previousMotion.y;
-        const magnitude = Math.hypot(dx, dy);
+        const rawMagnitude = Math.hypot(dx, dy);
+
+        // 小さな変化（手ぶれ・傾き）は無視して，しきい値を超えた分だけを使う
+        const magnitude = Math.max(0, rawMagnitude - SHAKE_THRESHOLD);
 
         // 振ったときの揺れを大きくする
         shakeOffsetX = Math.max(
@@ -368,9 +392,10 @@ function handleDeviceMotion(event) {
         );
         // 加速度の変化量から波の強さを計算
 
+        // 揺れの強さは MAX_WAVE_STRENGTH を上限にする（線が広がりすぎないように）
         waveStrength = Math.min(
-            35,
-            waveStrength + magnitude * 1.8
+            MAX_WAVE_STRENGTH,
+            waveStrength + magnitude * SHAKE_SENSITIVITY
         );
 
         // 波の位相を進める
