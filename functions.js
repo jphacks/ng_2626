@@ -45,7 +45,8 @@ window.OTOIROFunctions = {
   },
 
   // 音を鳴らす
-  playSound(audioState, fingerCount) {
+  // 音を鳴らす
+  async playSound(audioState, fingerCount, volume = 0.15) {
     const AudioContextClass =
       window.AudioContext || window.webkitAudioContext;
 
@@ -54,41 +55,85 @@ window.OTOIROFunctions = {
       return;
     }
 
-    if (!audioState.context) {
-      audioState.context = new AudioContextClass();
+    try {
+      // AudioContextを作成する
+      if (
+        !audioState.context ||
+        audioState.context.state === "closed"
+      ) {
+        audioState.context = new AudioContextClass();
+      }
+
+      const audio = audioState.context;
+
+      // 音声の再開が終わるまで待つ
+      if (audio.state === "suspended") {
+        await audio.resume();
+      }
+
+      if (audio.state !== "running") {
+        console.warn("音声を再生できません。状態:", audio.state);
+        return;
+      }
+
+      // 指の本数を1〜5本に制限する
+      const count = Math.max(1, Math.min(fingerCount, 5));
+
+      // 指の本数ごとに音程を変える
+      const frequencies = {
+        1: 440,
+        2: 554,
+        3: 659,
+        4: 783,
+      };
+
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+
+      // 5本指だけ音色を変える
+      oscillator.type = count === 5 ? "square" : "sine";
+
+      oscillator.frequency.setValueAtTime(
+        frequencies[count],
+        audio.currentTime
+      );
+
+      const duration = count === 5 ? 0.4 : 0.25;
+
+      // 指定された音量を使う（0〜1）
+      const safeVolume = Math.max(0, Math.min(volume, 1));
+
+      // 0なら完全に無音にする
+      if (safeVolume === 0) {
+        return;
+      }
+
+      gain.gain.setValueAtTime(
+        safeVolume,
+        audio.currentTime
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audio.currentTime + duration
+      );
+
+      oscillator.connect(gain);
+      gain.connect(audio.destination);
+
+      oscillator.start();
+      oscillator.stop(audio.currentTime + duration);
+
+      console.log(
+        `音を再生：${count}本、音量=${safeVolume}`,
+        `AudioContext=${audio.state}`
+      );
+    } catch (error) {
+      console.error("音声の再生に失敗しました:", error);
     }
-
-    const audio = audioState.context;
-
-    if (audio.state === "suspended") {
-      audio.resume();
-    }
-
-    const oscillator = audio.createOscillator();
-    const gain = audio.createGain();
-
-    const frequencies = {
-      1: 440,
-      2: 554,
-      3: 659
-    };
-
-    oscillator.type = "sine";
-    oscillator.frequency.value =
-      frequencies[Math.min(fingerCount, 3)] || 440;
-
-    gain.gain.setValueAtTime(0.12, audio.currentTime);
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      audio.currentTime + 0.25
-    );
-
-    oscillator.connect(gain);
-    gain.connect(audio.destination);
-
-    oscillator.start();
-    oscillator.stop(audio.currentTime + 0.25);
   },
+
+
 
   // 指の本数を画面に表示する
   updateStatus(status, count) {
