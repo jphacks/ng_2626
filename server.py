@@ -16,7 +16,7 @@ from fastapi import Body
 
 BASE_DIR = Path(__file__).resolve().parent
 
-app = FastAPI(title="OTOIRO shape refinement")
+app = FastAPI(title="OMOIRO shape refinement")
 @app.get("/api/health")
 async def health():
     return {"ok": True}

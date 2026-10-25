@@ -1251,9 +1251,9 @@ async function prepareExportFile() {
         return;
     }
 
-    // ファイル名：OTOIRO_タイトル_20261025.png
+    // ファイル名：OMOIRO_タイトル_20261025.png
     const fileName =
-        `OTOIRO_${sanitizeFileName(title)}_${formatDate(new Date(), "")}.png`;
+        `OMOIRO_${sanitizeFileName(title)}_${formatDate(new Date(), "")}.png`;
 
     exportFile = new File([blob], fileName, { type: "image/png" });
     exportFileTitle = title;
@@ -1413,6 +1413,6 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
-console.log("OTOIRO：JavaScriptの読み込み完了");
+console.log("OMOIRO：JavaScriptの読み込み完了");
 
 

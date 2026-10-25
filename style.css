@@ -339,3 +339,91 @@ button:disabled {
 #finishButton:active {
   transform: scale(0.96);
 }
+/* ========================================
+   タブレット以上（768px〜）のレイアウト
+   ========================================
+   ┌──────────────────────────────────────────────┐
+   │ OMOIRO [形状を補正] [お題]        [次の人へ]   [完成] │
+   │                  （ステータス）                    │
+   │ ┌──────────────────────────────────────────┐ │
+   │ │                キャンバス                  │ │
+   │ └──────────────────────────────────────────┘ │
+   │ [リセット]        （操作の説明）                  │
+   └──────────────────────────────────────────────┘
+
+   スマホのレイアウトを変えずに，タブレットだけボタンの位置を入れ替えるため，
+   HTMLの構造はそのままにして，CSSのグリッドで配置し直している．
+
+   仕組み：
+   - header・main とボタンのグループに display: contents を指定すると，
+     その「箱」がなくなり，中のボタンや要素が body の直接の子として扱われる．
+   - body をグリッドにして，それぞれの要素を好きな行・列に置く．
+*/
+@media (min-width: 768px) {
+  body {
+    display: grid;
+    /* 列：ロゴ｜補正｜お題｜（空き）｜次の人へ｜完成 */
+    grid-template-columns: auto auto auto 1fr auto auto;
+    column-gap: 12px;
+    align-items: center;
+    /* 行を上に詰める（画面の高さに合わせて行が引き伸ばされないように） */
+    align-content: start;
+    padding: 0 16px 20px;
+  }
+
+  /* 箱をなくして，中身を body のグリッドに直接並べる */
+  header,
+  .header-left,
+  .header-right,
+  main {
+    display: contents;
+  }
+
+  /* ---- 1行目：ロゴ・補正・お題（左）／次の人へ・完成（右） ---- */
+  .logo {
+    grid-row: 1;
+    grid-column: 1;
+    padding: 16px 8px 16px 4px;
+  }
+
+  #correctButton {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  #promptButton {
+    grid-row: 1;
+    grid-column: 3;
+  }
+
+  #pauseButton {
+    grid-row: 1;
+    grid-column: 5;
+  }
+
+  #finishButton {
+    grid-row: 1;
+    grid-column: 6;
+  }
+
+  /* ---- 2行目以降：ステータス・キャンバスなどは横幅いっぱい ---- */
+  main > * {
+    grid-column: 1 / -1;
+  }
+
+  /* ---- 一番下の行：リセット（左）と操作の説明（中央） ----
+     grid-row に大きな数字を指定して，必ず一番下の行に置く
+     （間の空いた行は高さ0になるので，見た目に影響しない） */
+  #clearButton {
+    grid-row: 20;
+    grid-column: 1;
+    justify-self: start;
+    margin-top: 12px;
+  }
+
+  .help {
+    grid-row: 20;
+    grid-column: 1 / -1;
+    margin: 12px 0 0;
+  }
+}
