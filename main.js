@@ -43,6 +43,30 @@ const INK_ALPHA_STILL = [0.8, 1, 1];        // 静止時の不透明度（外側
 const INK_ALPHA_SHAKE = [0.03, 0.04, 0.07]; // 強く振っているときの不透明度（変更前の元の値）
 const SHAKE_ALPHA_FULL = 10;                 // 揺れの強さがこの値以上で「強く振っている」扱い（最大は MAX_WAVE_STRENGTH）
 
+// ---- 振ったときのにじみ方 ----
+// 揺れが強いほど，線の3層のぼかし（にじみ）を大きくする．
+// 墨が水ににじんで広がるような見た目にするため．
+const INK_BLUR_STILL = [6, 1.5, 0];   // 静止時のぼかしの量（px）（外側・中間・中心）
+const INK_BLUR_SHAKE = [16, 6, 1.5];  // 強く振っているときのぼかしの量（px）（大きいほどにじむ）
+const INK_WIDTH_SHAKE = 1.6;          // 強く振っているとき，外側のにじみの幅を何倍に広げるか
+
+// 揺れの強さを 0（静止）〜1（強く振っている）の割合で返す
+function getShakeRatio() {
+    return Math.min(waveStrength / SHAKE_ALPHA_FULL, 1);
+}
+
+// 揺れの強さに応じたぼかしの量を返す（layer：0=外側，1=中間，2=中心）
+// 例：外側は静止時 6px → 強く振ると 16px までにじむ
+function getInkBlur(layer) {
+    const t = getShakeRatio();
+    const still = INK_BLUR_STILL[layer];
+    const shake = INK_BLUR_SHAKE[layer];
+    const blur = still + (shake - still) * t;
+
+    // 0px のときはフィルターなし（処理を軽くするため）
+    return blur > 0.05 ? `blur(${blur.toFixed(1)}px)` : "none";
+}
+
 // 揺れの強さに応じた不透明度を返す（layer：0=外側，1=中間，2=中心）
 function getInkAlpha(layer) {
     // 0（静止）〜1（強く振っている）の割合
@@ -273,10 +297,12 @@ function drawStrokeList(targetCtx, list, deform = false) {
         targetCtx.save();
         // 不透明度：静止時は濃く，振っている間は薄くする（getInkAlpha を参照）
         targetCtx.globalAlpha = getInkAlpha(0);
-        targetCtx.filter = "blur(6px)";
+        // ぼかし：静止時は6px，振るほど大きくにじむ（getInkBlur を参照）
+        targetCtx.filter = getInkBlur(0);
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
-        targetCtx.lineWidth = width * 2.5;
+        // 幅：振るほど外側のにじみを広げる（強く振ると INK_WIDTH_SHAKE 倍）
+        targetCtx.lineWidth = width * 2.5 * (1 + (INK_WIDTH_SHAKE - 1) * getShakeRatio());
         targetCtx.lineCap = "round";
         targetCtx.lineJoin = "round";
 
@@ -292,7 +318,7 @@ function drawStrokeList(targetCtx, list, deform = false) {
         // 2. 中間の墨
         targetCtx.save();
         targetCtx.globalAlpha = getInkAlpha(1);
-        targetCtx.filter = "blur(1.5px)";
+        targetCtx.filter = getInkBlur(1);
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
         targetCtx.lineWidth = width * 1.5;
@@ -311,7 +337,7 @@ function drawStrokeList(targetCtx, list, deform = false) {
         // 3. 中心の濃い墨
         targetCtx.save();
         targetCtx.globalAlpha = getInkAlpha(2);
-        targetCtx.filter = "none";
+        targetCtx.filter = getInkBlur(2);
         targetCtx.strokeStyle = color;
         targetCtx.fillStyle = color;
         targetCtx.lineWidth = width;
