@@ -33,15 +33,15 @@ let wavePhase = 0;
 // 加速度センサーの値は，手に持っているだけ・少し傾けただけでも細かく変化する．
 // そのまま使うと「振ったつもりがないのに揺れる」ため，小さな変化は無視する．
 const SHAKE_THRESHOLD = 3;     // この値（m/s²）より小さい加速度の変化は無視する（大きいほど鈍くなる）
-const SHAKE_SENSITIVITY = 1.0; // 振ったときの揺れの増え方（変更前は1.8．小さいほど鈍くなる）
-const MAX_WAVE_STRENGTH = 15;  // 線が揺れて広がる最大の幅（px）（変更前は35．小さいほど細くなる）
+const SHAKE_SENSITIVITY = 1.8; // 振ったときの揺れの増え方（元の値．小さいほど鈍くなる）
+const MAX_WAVE_STRENGTH = 35;  // 線が揺れて広がる最大の幅（px）（元の値．小さいほど細くなる）
 
 // ---- 線の3層（外側のにじみ・中間・中心）の不透明度 ----
 // 静止しているときは濃く表示し，端末を振っている間だけ元の薄い値に近づけて透けさせる．
 // 揺れが収まる（waveStrengthが0に戻る）と，自然に静止時の濃さへ戻る．
 const INK_ALPHA_STILL = [0.8, 1, 1];        // 静止時の不透明度（外側・中間・中心）
 const INK_ALPHA_SHAKE = [0.03, 0.04, 0.07]; // 強く振っているときの不透明度（変更前の元の値）
-const SHAKE_ALPHA_FULL = 8;                  // 揺れの強さがこの値以上で「強く振っている」扱い（最大は MAX_WAVE_STRENGTH）
+const SHAKE_ALPHA_FULL = 10;                 // 揺れの強さがこの値以上で「強く振っている」扱い（最大は MAX_WAVE_STRENGTH）
 
 // 揺れの強さに応じた不透明度を返す（layer：0=外側，1=中間，2=中心）
 function getInkAlpha(layer) {
