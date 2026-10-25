@@ -32,7 +32,7 @@ let wavePhase = 0;
 // ---- シェイクの感度と揺れの大きさ ----
 // 加速度センサーの値は，手に持っているだけ・少し傾けただけでも細かく変化する．
 // そのまま使うと「振ったつもりがないのに揺れる」ため，小さな変化は無視する．
-const SHAKE_THRESHOLD = 3;     // この値（m/s²）より小さい加速度の変化は無視する（大きいほど鈍くなる）
+const SHAKE_THRESHOLD = 1;     // この値（m/s²）より小さい加速度の変化は無視する（大きいほど鈍くなる）
 const SHAKE_SENSITIVITY = 1.8; // 振ったときの揺れの増え方（元の値．小さいほど鈍くなる）
 const MAX_WAVE_STRENGTH = 35;  // 線が揺れて広がる最大の幅（px）（元の値．小さいほど細くなる）
 
@@ -207,7 +207,7 @@ const promptWord = ["『周囲の音』を表現してみて", "今の気分を�
 let showingPrompt = false;
 
 // お題
-const promptWords = ["波", "風", "雨", "光", "影", "音", "夢", "花", "鳥", "月"];
+const promptWords = ["今の気分を形で", "好きな音楽のノリを形で", "今いる場所の空気を形で", "未来の想像を形で", "周囲の音を形で", "最近の出来事を形で", "好きな季節を形で", "自分の感情を形で", "夢の中の景色を形で"];
 
 promptButton.addEventListener("click", () => {
     const word = promptWords[Math.floor(Math.random() * promptWords.length)];
