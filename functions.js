@@ -45,7 +45,27 @@ window.OTOIROFunctions = {
   },
 
   // 音を鳴らす
+<<<<<<< Updated upstream
   playSound(audioState, fingerCount) {
+=======
+  // ========================================
+  //
+  // 音量を上げるための工夫（タブレットの小さいスピーカーでも聞こえるように）
+  //   1. 音量の初期値を 0.15 → 1 に上げる（main.js から渡す値）
+  //   2. 1オクターブ上の音（倍音）を重ねて，耳に届きやすい音色にする
+  //   3. 全体を増幅してから「リミッター」に通す
+  //      リミッターは，音が大きくなりすぎて割れる（音割れ）手前で自動的に抑える仕組み．
+  //      これにより，割れずに出せる最大の大きさで鳴らせる．
+  //
+  // 音量を調整したいときは，下の SOUND_BOOST を変える（大きいほど音が大きい）．
+  async playSound(audioState, fingerCount, volume = 1) {
+    // 全体の増幅の倍率（1で増幅なし．3〜4くらいまでが目安）
+    const SOUND_BOOST = 4;
+
+    // 重ねる倍音（1オクターブ上）の大きさ（基本の音に対する割合）
+    const OVERTONE_LEVEL = 0.5;
+
+>>>>>>> Stashed changes
     const AudioContextClass =
       window.AudioContext || window.webkitAudioContext;
 
