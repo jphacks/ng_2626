@@ -321,6 +321,24 @@ button:disabled {
   border-radius: 8px;
 }
 
+/* 完成ボタンを目立たせる */
+/* 完成ボタンを目立たせる */
+#finishButton {
+  background-color: #FAFF60;
+  color: #242424;
+  border: 2px solid #FAFF60;
+  font-weight: 700;
+  box-shadow: 0 0 14px rgba(250, 255, 96, 0.35);
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+#finishButton:hover {
+  background-color: #FFFF91;
+}
+
+#finishButton:active {
+  transform: scale(0.96);
+}
 /* ========================================
    タブレット以上（768px〜）のレイアウト
    ========================================
