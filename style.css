@@ -158,3 +158,55 @@ main {
     padding-bottom: 20px;
   }
 }
+
+/* ========================================
+   署名・完成画面
+   ======================================== */
+
+/* hidden属性を付けた要素を確実に隠す
+   （displayを指定しているスタイルがあっても隠れるようにする） */
+[hidden] {
+  display: none !important;
+}
+
+/* 押せないボタンは薄く表示する（署名中のお題・リセットなど） */
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 署名中に表示する「自分の署名を書き直す」ボタンのエリア */
+.mode-controls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+/* 完成後に表示するタイトル入力と保存ボタンのエリア */
+.finish-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 560px;
+  margin: 16px auto 0;
+}
+
+.finish-panel label {
+  width: 100%;
+  text-align: center;
+  color: #b8b8d0;
+  font-size: 13px;
+}
+
+#titleInput {
+  flex: 1 1 220px;
+  padding: 10px 12px;
+  /* 16px未満だと，iPhoneで入力時に画面が勝手に拡大されてしまう */
+  font-size: 16px;
+  color: #ffffff;
+  background: #1b1b2c;
+  border: 1px solid #666688;
+  border-radius: 8px;
+}
